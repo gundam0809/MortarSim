@@ -30,7 +30,7 @@ public class movement : MonoBehaviour
     {
 
 
-        if (Input.GetAxisRaw("Horizontal") != 0)
+        /*if (Input.GetAxisRaw("Horizontal") != 0)
         {
             horizontatInput = Input.GetAxisRaw("Horizontal");
             moveDirection = orientation.forward * horizontatInput;
@@ -38,8 +38,8 @@ public class movement : MonoBehaviour
 
             //clamp the velocity
 
-            Debug.Log("Crabs games are good");
-        }
+            Debug.Log("Am i okay?");
+        }*/
         if (Input.GetKeyDown(KeyCode.W))
         {
 
