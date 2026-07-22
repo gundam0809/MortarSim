@@ -40,21 +40,21 @@ public class movement : MonoBehaviour
 
             Debug.Log("Am i okay?");
         }*/
-        if (Input.GetKeyDown(KeyCode.W))
+        if (Input.GetKeyDown(KeyCode.A))
         {
 
             transform.Rotate(0, 5 * turnSpeed, 0);
         }
-        if (Input.GetKeyDown(KeyCode.S))
+        if (Input.GetKeyDown(KeyCode.D))
         {
             transform.Rotate(0, -5 * turnSpeed, 0);
         }
-        if (Input.GetKeyDown(KeyCode.A))
+        if (Input.GetKeyDown(KeyCode.W))
         {
 
             transform.Rotate(5 * turnSpeed, 0, 0);
         }
-        if (Input.GetKeyDown(KeyCode.D))
+        if (Input.GetKeyDown(KeyCode.S))
         {
             transform.Rotate(-5 * turnSpeed, 0, 0);
         }
