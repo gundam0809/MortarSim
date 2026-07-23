@@ -49,8 +49,8 @@ public class shooting : MonoBehaviour
     private void MyInput()
     {
         //Check if allowed to hold down button and take corresponding input
-        if (allowButtonHold) shootin = Input.GetMouseButtonDown(0);
-        else shootin = Input.GetMouseButtonDown(0);
+        if (allowButtonHold) shootin = Input.GetKeyDown(KeyCode.Space);
+        else shootin = Input.GetKeyDown(KeyCode.Space);
 
 
         //Reloading 
@@ -75,7 +75,6 @@ public class shooting : MonoBehaviour
     {
         readyToShoot = false;
 
-        Debug.Log("mr knight is king");
         //Find the exact hit position using a raycast
         Ray ray = fpsCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)); //Just a ray through the middle of your current view
         RaycastHit hit;
