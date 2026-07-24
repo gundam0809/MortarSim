@@ -4,35 +4,26 @@ public class shooting : MonoBehaviour
 {
     public GameObject bullet;
 
-
     //bullet force
     public float shootForce, upwardForce;
-
 
     //Gun stats
     public float timeBetweenShooting, spread, reloadTime, timeBetweenShots = 1f;
     public int magazineSize, bulletsPerTap;
     public bool allowButtonHold;
 
-
     int bulletsLeft, bulletsShot;
-
 
     //bools
     bool shootin = true, readyToShoot = true, reloading = false;
 
-
     //Reference
     public Camera fpsCam;
     public Transform attackPoint;
-
-
-    
-
+    public Collider mortarCollider; // assign the mortar's Collider in the Inspector
 
     //bug fixing :D
     public bool allowInvoke = true;
-
 
     private void Awake()
     {
@@ -41,23 +32,21 @@ public class shooting : MonoBehaviour
         readyToShoot = true;
     }
 
-
     private void Update()
     {
         MyInput();
     }
+
     private void MyInput()
     {
         //Check if allowed to hold down button and take corresponding input
         if (allowButtonHold) shootin = Input.GetKeyDown(KeyCode.Space);
         else shootin = Input.GetKeyDown(KeyCode.Space);
 
-
         //Reloading 
         if (Input.GetKeyDown(KeyCode.R) && bulletsLeft < magazineSize && !reloading) Reload();
         //Reload automatically when trying to shoot without ammo
         if (readyToShoot && shootin && !reloading && bulletsLeft <= 0) Reload();
-
 
         //Shooting
         if (readyToShoot && shootin && !reloading && bulletsLeft > 0)
@@ -65,11 +54,9 @@ public class shooting : MonoBehaviour
             //Set bullets shot to 0
             bulletsShot = 0;
 
-
             Shoot();
         }
     }
-
 
     private void Shoot()
     {
@@ -79,7 +66,6 @@ public class shooting : MonoBehaviour
         Ray ray = fpsCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)); //Just a ray through the middle of your current view
         RaycastHit hit;
 
-
         //check if ray hits something
         Vector3 targetPoint;
         if (Physics.Raycast(ray, out hit))
@@ -87,37 +73,32 @@ public class shooting : MonoBehaviour
         else
             targetPoint = ray.GetPoint(75); //Just a point far away from the player
 
-
         //Calculate direction from attackPoint to targetPoint
         Vector3 directionWithoutSpread = targetPoint - attackPoint.position;
-
 
         //Calculate spread
         float x = Random.Range(-spread, spread);
         float y = Random.Range(-spread, spread);
 
-
         //Calculate new direction with spread
         Vector3 directionWithSpread = directionWithoutSpread + new Vector3(x, y, 0); //Just add spread to last direction
 
-
         //Instantiate bullet/projectile
         GameObject currentBullet = Instantiate(bullet, attackPoint.position, Quaternion.identity); //store instantiated bullet in currentBullet
+
+        //Ignore collision between bullet and mortar so it doesn't get physically shoved
+        if (mortarCollider != null)
+            Physics.IgnoreCollision(currentBullet.GetComponent<Collider>(), mortarCollider);
+
         //Rotate bullet to shoot direction
         currentBullet.transform.forward = directionWithSpread.normalized;
-
 
         //Add forces to bullet
         currentBullet.GetComponent<Rigidbody>().AddForce(directionWithSpread.normalized * shootForce, ForceMode.Impulse);
         currentBullet.GetComponent<Rigidbody>().AddForce(fpsCam.transform.up * upwardForce, ForceMode.Impulse);
 
-
-
-
-
         bulletsLeft--;
         bulletsShot++;
-
 
         //Invoke resetShot function (if not already invoked), with your timeBetweenShooting
         if (allowInvoke)
@@ -126,11 +107,11 @@ public class shooting : MonoBehaviour
             allowInvoke = false;
         }
 
-
         //if more than one bulletsPerTap make sure to repeat shoot function
         if (bulletsShot < bulletsPerTap && bulletsLeft > 0)
             Invoke("Shoot", timeBetweenShots);
     }
+
     private void ResetShot()
     {
         //Allow shooting and invoking again
@@ -138,12 +119,12 @@ public class shooting : MonoBehaviour
         allowInvoke = true;
     }
 
-
     private void Reload()
     {
         reloading = true;
         Invoke("ReloadFinished", reloadTime); //Invoke ReloadFinished function with your reloadTime as delay
     }
+
     private void ReloadFinished()
     {
         //Fill magazine

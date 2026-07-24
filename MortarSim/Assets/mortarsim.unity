@@ -1985,6 +1985,7 @@ MonoBehaviour:
   allowButtonHold: 0
   fpsCam: {fileID: 1400059991}
   attackPoint: {fileID: 26512296}
+  mortarCollider: {fileID: 4314071860608633712}
   allowInvoke: 1
 --- !u!1 &4418972123405658280
 GameObject:
