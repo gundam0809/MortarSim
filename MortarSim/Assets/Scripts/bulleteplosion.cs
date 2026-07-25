@@ -3,77 +3,103 @@ using UnityEngine;
 
 public class bulleteplosion : MonoBehaviour
 {
+    [Header("Arc Rotation")]
+    public bool rotateToVelocity = true;
+    private Rigidbody rb;
+
     [Header("Ground Detection (Capsule Collider)")]
-    public string groundTag = "Ground"; // tag your ground objects with this
-    public GameObject explosionEffect;  // optional particle effect prefab
+    public string groundTag = "Ground";
+    public GameObject explosionEffect;
 
-    [Header("Explosion Detection (Sphere Collider - set as Trigger)")]
-    public float explosionRadius = 5f; // should match your sphere collider radius
-    public LayerMask destroyableLayers; // set this to whatever layers should be destroyed
+    [Header("Destroy Detection (assign Sphere Collider #1 here)")]
+    public SphereCollider destroySphere;
+    public LayerMask destroyableLayers;
 
-    private List<GameObject> objectsInRange = new List<GameObject>();
+    [Header("Explosion Force (assign Sphere Collider #2 here)")]
+    public SphereCollider explosionSphere;
+    public float explosionForce = 700f;
+    public float upwardModifier = 0.5f;
+
+    [Header("Spawn Safety Delay")]
+    public float armDelay = 3f;
+
+    private List<GameObject> objectsToDestroy = new List<GameObject>();
     private bool hasExploded = false;
+    private bool isArmed = false;
 
-    // Call this from your shooting script right after Instantiate to ignore collision with the shooter/mortar
-    public void IgnoreCollisionWith(Collider other)
+    private void Awake()
     {
-        Collider myCollider = GetComponent<Collider>();
-        if (myCollider != null && other != null)
+        rb = GetComponent<Rigidbody>();
+    }
+
+    private void Start()
+    {
+        Invoke(nameof(Arm), armDelay);
+    }
+
+    private void Arm()
+    {
+        isArmed = true;
+    }
+
+    private void Update()
+    {
+        if (rotateToVelocity && rb != null && rb.linearVelocity.sqrMagnitude > 0.01f)
         {
-            Physics.IgnoreCollision(myCollider, other);
+            transform.rotation = Quaternion.LookRotation(rb.linearVelocity.normalized);
         }
     }
 
-    // Called by the physical (non-trigger) Capsule Collider when it physically hits something
     private void OnCollisionEnter(Collision collision)
     {
-        if (hasExploded) return;
-
-        // Explode on touching ground (or really anything solid, if you remove the tag check)
+        if (!isArmed || hasExploded) return;
         if (collision.gameObject.CompareTag(groundTag))
-        {
             Explode();
-        }
     }
 
-    // Called by the Sphere Collider (must be set to "Is Trigger" in the Inspector)
     private void OnTriggerEnter(Collider other)
     {
-        if (hasExploded) return;
+        if (!isArmed || hasExploded) return;
 
-        // Only track objects on the layers you want destroyed
         if (((1 << other.gameObject.layer) & destroyableLayers) != 0)
         {
-            if (!objectsInRange.Contains(other.gameObject))
-                objectsInRange.Add(other.gameObject);
+            if (!objectsToDestroy.Contains(other.gameObject))
+                objectsToDestroy.Add(other.gameObject);
+
+            Explode();
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (objectsInRange.Contains(other.gameObject))
-            objectsInRange.Remove(other.gameObject);
+        if (objectsToDestroy.Contains(other.gameObject))
+            objectsToDestroy.Remove(other.gameObject);
     }
 
     private void Explode()
     {
         hasExploded = true;
 
-        // Spawn explosion effect if assigned
         if (explosionEffect != null)
             Instantiate(explosionEffect, transform.position, Quaternion.identity);
 
-        // Destroy everything currently detected inside the sphere collider
-        foreach (GameObject obj in objectsInRange)
+        foreach (GameObject obj in objectsToDestroy)
         {
             if (obj != null)
                 Destroy(obj);
         }
+        objectsToDestroy.Clear();
 
-        objectsInRange.Clear();
+        float radius = explosionSphere != null ? explosionSphere.radius * transform.lossyScale.x : 8f;
 
-        // Destroy the bullet itself
+        Collider[] nearby = Physics.OverlapSphere(transform.position, radius);
+        foreach (Collider col in nearby)
+        {
+            Rigidbody otherRb = col.GetComponent<Rigidbody>();
+            if (otherRb != null)
+                otherRb.AddExplosionForce(explosionForce, transform.position, radius, upwardModifier, ForceMode.Impulse);
+        }
+
         Destroy(gameObject);
     }
 }
-

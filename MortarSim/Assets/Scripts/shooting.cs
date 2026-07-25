@@ -20,14 +20,12 @@ public class shooting : MonoBehaviour
     //Reference
     public Camera fpsCam;
     public Transform attackPoint;
-    public Collider mortarCollider; // assign the mortar's Collider in the Inspector
 
     //bug fixing :D
     public bool allowInvoke = true;
 
     private void Awake()
     {
-        //make sure magazine is full
         bulletsLeft = magazineSize;
         readyToShoot = true;
     }
@@ -39,21 +37,15 @@ public class shooting : MonoBehaviour
 
     private void MyInput()
     {
-        //Check if allowed to hold down button and take corresponding input
         if (allowButtonHold) shootin = Input.GetKeyDown(KeyCode.Space);
         else shootin = Input.GetKeyDown(KeyCode.Space);
 
-        //Reloading 
         if (Input.GetKeyDown(KeyCode.R) && bulletsLeft < magazineSize && !reloading) Reload();
-        //Reload automatically when trying to shoot without ammo
         if (readyToShoot && shootin && !reloading && bulletsLeft <= 0) Reload();
 
-        //Shooting
         if (readyToShoot && shootin && !reloading && bulletsLeft > 0)
         {
-            //Set bullets shot to 0
             bulletsShot = 0;
-
             Shoot();
         }
     }
@@ -62,36 +54,36 @@ public class shooting : MonoBehaviour
     {
         readyToShoot = false;
 
-        //Find the exact hit position using a raycast
-        Ray ray = fpsCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)); //Just a ray through the middle of your current view
-        RaycastHit hit;
-
-        //check if ray hits something
-        Vector3 targetPoint;
-        if (Physics.Raycast(ray, out hit))
-            targetPoint = hit.point;
-        else
-            targetPoint = ray.GetPoint(75); //Just a point far away from the player
-
-        //Calculate direction from attackPoint to targetPoint
-        Vector3 directionWithoutSpread = targetPoint - attackPoint.position;
+        //Fire straight along the camera's forward direction
+        Vector3 directionWithoutSpread = fpsCam.transform.forward;
+        Debug.Log("Camera forward: " + directionWithoutSpread + " | Camera rotation: " + fpsCam.transform.rotation.eulerAngles + " | Camera name: " + fpsCam.gameObject.name);
 
         //Calculate spread
         float x = Random.Range(-spread, spread);
         float y = Random.Range(-spread, spread);
 
-        //Calculate new direction with spread
-        Vector3 directionWithSpread = directionWithoutSpread + new Vector3(x, y, 0); //Just add spread to last direction
+        //Apply spread as a small rotation offset
+        Quaternion spreadRotation = Quaternion.Euler(y, x, 0);
+        Vector3 directionWithSpread = spreadRotation * directionWithoutSpread;
 
         //Instantiate bullet/projectile
-        GameObject currentBullet = Instantiate(bullet, attackPoint.position, Quaternion.identity); //store instantiated bullet in currentBullet
+        GameObject currentBullet = Instantiate(bullet, attackPoint.position, Quaternion.identity);
+        Debug.Log("AttackPoint position: " + attackPoint.position + " | AttackPoint forward: " + attackPoint.forward);
 
-        //Ignore collision between bullet and mortar so it doesn't get physically shoved
-        if (mortarCollider != null)
-            Physics.IgnoreCollision(currentBullet.GetComponent<Collider>(), mortarCollider);
+        //Ignore collision between the bullet's colliders and the mortar's Box Collider
+        BoxCollider mortarCol = GetComponent<BoxCollider>();
+        if (mortarCol != null)
+        {
+            Collider[] bulletColliders = currentBullet.GetComponentsInChildren<Collider>();
+            foreach (Collider bulletCol in bulletColliders)
+            {
+                Physics.IgnoreCollision(bulletCol, mortarCol);
+            }
+        }
 
         //Rotate bullet to shoot direction
         currentBullet.transform.forward = directionWithSpread.normalized;
+        Debug.Log("Bullet forward after set: " + currentBullet.transform.forward + " | Bullet rotation: " + currentBullet.transform.rotation.eulerAngles);
 
         //Add forces to bullet
         currentBullet.GetComponent<Rigidbody>().AddForce(directionWithSpread.normalized * shootForce, ForceMode.Impulse);
@@ -100,21 +92,18 @@ public class shooting : MonoBehaviour
         bulletsLeft--;
         bulletsShot++;
 
-        //Invoke resetShot function (if not already invoked), with your timeBetweenShooting
         if (allowInvoke)
         {
             Invoke("ResetShot", timeBetweenShooting);
             allowInvoke = false;
         }
 
-        //if more than one bulletsPerTap make sure to repeat shoot function
         if (bulletsShot < bulletsPerTap && bulletsLeft > 0)
             Invoke("Shoot", timeBetweenShots);
     }
 
     private void ResetShot()
     {
-        //Allow shooting and invoking again
         readyToShoot = true;
         allowInvoke = true;
     }
@@ -122,12 +111,11 @@ public class shooting : MonoBehaviour
     private void Reload()
     {
         reloading = true;
-        Invoke("ReloadFinished", reloadTime); //Invoke ReloadFinished function with your reloadTime as delay
+        Invoke("ReloadFinished", reloadTime);
     }
 
     private void ReloadFinished()
     {
-        //Fill magazine
         bulletsLeft = magazineSize;
         reloading = false;
     }
