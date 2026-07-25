@@ -7,15 +7,15 @@ public class bulleteplosion : MonoBehaviour
     public bool rotateToVelocity = true;
     private Rigidbody rb;
 
-    [Header("Ground Detection (Capsule Collider)")]
+    [Header("Ground Detection (Capsule Collider - set as Trigger)")]
     public string groundTag = "Ground";
     public GameObject explosionEffect;
 
-    [Header("Destroy Detection (assign Sphere Collider #1 here)")]
+    [Header("Destroy Detection (assign Sphere Collider #1 here - set as Trigger)")]
     public SphereCollider destroySphere;
     public LayerMask destroyableLayers;
 
-    [Header("Explosion Force (assign Sphere Collider #2 here)")]
+    [Header("Explosion Force (assign Sphere Collider #2 here - set as Trigger)")]
     public SphereCollider explosionSphere;
     public float explosionForce = 700f;
     public float upwardModifier = 0.5f;
@@ -50,17 +50,19 @@ public class bulleteplosion : MonoBehaviour
         }
     }
 
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (!isArmed || hasExploded) return;
-        if (collision.gameObject.CompareTag(groundTag))
-            Explode();
-    }
-
+    // All colliders are now triggers, so ground detection happens here too
     private void OnTriggerEnter(Collider other)
     {
         if (!isArmed || hasExploded) return;
 
+        // Ground contact
+        if (other.CompareTag(groundTag))
+        {
+            Explode();
+            return;
+        }
+
+        // Destroyable object contact
         if (((1 << other.gameObject.layer) & destroyableLayers) != 0)
         {
             if (!objectsToDestroy.Contains(other.gameObject))
